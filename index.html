@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Monitoring Daya</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    *{box-sizing:border-box;font-family:Segoe UI, Arial, sans-serif}
+    body{margin:0;min-height:100vh;background:radial-gradient(circle at top,#0f2027,#203a43,#2c5364);color:#fff;display:flex;flex-direction:column;align-items:center}
+    h1{margin:18px 0 6px}
+    .status{margin:6px 0 14px;padding:8px 14px;border-radius:999px;background:rgba(255,255,255,.12);backdrop-filter:blur(6px);font-size:14px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;width:min(900px,92%)}
+    .card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:16px;text-align:center;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.35)}
+    .value{font-size:36px;font-weight:800;margin-top:6px}
+    .unit{font-size:14px;opacity:.8;margin-left:4px}
+    .alarm{margin:14px;padding:10px 16px;background:linear-gradient(135deg,#ff512f,#dd2476);border-radius:12px;font-weight:800;box-shadow:0 0 22px rgba(255,80,80,.7)}
+    .chart-wrap{width:min(900px,92%);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:14px;margin:12px 0 22px}
+    .footer{opacity:.6;font-size:12px;margin-bottom:18px}
+  </style>
+</head>
+<body>
+
+  <h1>⚡ Monitoring Daya Listrik</h1>
+
+  <div class="status">
+    Status Device: <b id="status">⏳ CEK...</b>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <div>Tegangan</div>
+      <div class="value"><span id="tegangan">-</span><span class="unit">V</span></div>
+    </div>
+    <div class="card">
+      <div>Arus</div>
+      <div class="value"><span id="arus">-</span><span class="unit">A</span></div>
+    </div>
+    <div class="card">
+      <div>Daya</div>
+      <div class="value"><span id="daya">-</span><span class="unit">W</span></div>
+    </div>
+  </div>
+
+  <div id="alarmBox" class="alarm" style="display:none">⚠ OVERLOAD TERDETEKSI!</div>
+
+  <div class="chart-wrap">
+    <canvas id="chart"></canvas>
+  </div>
+
+  <div class="footer">Auto refresh 5 detik • GitHub Pages</div>
+
+  <script>
+    const TOKEN = "TOKEN_KAMU"; // GANTI TOKEN BLYNK
+    const maxPoints = 20;
+
+    const elArus = document.getElementById("arus");
+    const elDaya = document.getElementById("daya");
+    const elTeg  = document.getElementById("tegangan");
+    const elStatus = document.getElementById("status");
+    const alarmBox = document.getElementById("alarmBox");
+
+    let labels   = JSON.parse(localStorage.getItem('labels') || '[]');
+    let arusData = JSON.parse(localStorage.getItem('arusData') || '[]');
+    let dayaData = JSON.parse(localStorage.getItem('dayaData') || '[]');
+
+    const ctx = document.getElementById('chart');
+    const chart = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [
+          { label: 'Arus (A)', data: arusData, tension:.3 },
+          { label: 'Daya (W)', data: dayaData, tension:.3 }
+        ]
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    async function getPin(pin){
+      const res = await fetch(`https://blynk.cloud/external/api/get?token=${TOKEN}&${pin}`);
+      const txt = await res.text();
+      return parseFloat(txt) || 0;
+    }
+
+    async function getStatus(){
+      const res = await fetch(`https://blynk.cloud/external/api/isHardwareConnected?token=${TOKEN}`);
+      const txt = await res.text();
+      return txt.trim() === "true";
+    }
+
+    async function updateData(){
+      try {
+        const [arus, daya, tegangan, online] = await Promise.all([
+          getPin("V0"),
+          getPin("V1"),
+          getPin("V2"),
+          getStatus()
+        ]);
+
+        elArus.textContent = arus.toFixed(2);
+        elDaya.textContent = Math.round(daya);
+        elTeg.textContent  = Math.round(tegangan);
+
+        elStatus.innerHTML = online
+          ? '<span style="color:#7CFF7A">🟢 ONLINE</span>'
+          : '<span style="color:#FF7A7A">🔴 OFFLINE</span>';
+
+        alarmBox.style.display = (arus > 3 || daya > 660) ? "block" : "none";
+
+        const now = new Date().toLocaleTimeString();
+        labels.push(now);
+        arusData.push(arus);
+        dayaData.push(daya);
+
+        if (labels.length > maxPoints) {
+          labels.shift(); arusData.shift(); dayaData.shift();
+        }
+
+        localStorage.setItem('labels', JSON.stringify(labels));
+        localStorage.setItem('arusData', JSON.stringify(arusData));
+        localStorage.setItem('dayaData', JSON.stringify(dayaData));
+
+        chart.update();
+      } catch (e) {
+        console.error("Gagal update:", e);
+      }
+    }
+
+    updateData();
+    setInterval(updateData, 5000);
+  </script>
+
+</body>
+</html>
