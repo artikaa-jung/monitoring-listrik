@@ -4,27 +4,71 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Login Monitoring</title>
+
   <style>
-    body{min-height:100vh;margin:0;display:flex;align-items:center;justify-content:center;
-      background:radial-gradient(circle at top,#0f2027,#203a43,#2c5364);color:#fff;font-family:Segoe UI,Arial}
-    .card{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);
-      border-radius:16px;padding:22px 20px;width:min(360px,92%);box-shadow:0 10px 30px rgba(0,0,0,.35)}
-    h2{margin:0 0 10px;text-align:center}
-    input,button{width:100%;padding:12px;border-radius:10px;border:none;margin-top:10px}
-    input{background:#0e2430;color:#fff}
-    button{background:#00d2ff;color:#002;font-weight:800;cursor:pointer}
-    .hint{opacity:.7;font-size:12px;margin-top:10px;text-align:center}
-    .err{color:#ff9a9a;font-size:13px;margin-top:8px;display:none}
+    *{box-sizing:border-box}
+    body{
+      min-height:100vh;margin:0;
+      display:flex;align-items:center;justify-content:center;
+      background:radial-gradient(circle at top,#0f2027,#203a43,#2c5364);
+      color:#fff;font-family:Segoe UI,Arial
+    }
+    .card{
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.2);
+      border-radius:16px;
+      padding:22px 20px;
+      width:min(360px,92%);
+      box-shadow:0 10px 30px rgba(0,0,0,.35)
+    }
+    h2{text-align:center;margin:0 0 14px}
+    input,button{
+      width:100%;
+      padding:12px;
+      border-radius:10px;
+      border:none;
+      margin-top:10px;
+      font-size:14px
+    }
+    input{
+      background:#0e2430;
+      color:#fff;
+      outline:none
+    }
+    button{
+      background:#00d2ff;
+      color:#002;
+      font-weight:800;
+      cursor:pointer
+    }
+    button:hover{opacity:.9}
+    .hint{
+      opacity:.65;
+      font-size:12px;
+      margin-top:12px;
+      text-align:center
+    }
+    .err{
+      color:#ff9a9a;
+      font-size:13px;
+      margin-top:8px;
+      display:none;
+      text-align:center
+    }
   </style>
 </head>
+
 <body>
   <div class="card">
     <h2>🔐 Login Monitoring</h2>
-    <input id="user" placeholder="Username" />
-    <input id="pass" type="password" placeholder="Password" />
+
+    <input id="user" placeholder="Username" autocomplete="username">
+    <input id="pass" type="password" placeholder="Password" autocomplete="current-password">
+
     <button onclick="login()">Masuk</button>
-    <div id="err" class="err">Username / Password salah</div>
-    <div class="hint">Demo lokal (tanpa backend)</div>
+
+    <div id="err" class="err"></div>
+    <div class="hint">Demo lokal • Tanpa database</div>
   </div>
 
   <script src="auth.js"></script>
