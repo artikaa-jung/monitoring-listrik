@@ -5,7 +5,6 @@
   <title>Monitoring Daya</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Proteksi -->
   <script src="auth.js"></script>
   <script>guard();</script>
   <style>
@@ -26,7 +25,6 @@
 </head>
 <body>
 
-  <!-- Tombol Logout -->
   <a href="javascript:void(0)" class="logout" onclick="logout()">Logout</a>
 
   <h1>⚡ Monitoring Daya Listrik</h1>
@@ -52,9 +50,18 @@
 
   <div id="alarmBox" class="alarm" style="display:none">⚠ OVERLOAD TERDETEKSI!</div>
 
+  <!-- Grafik Arus -->
   <div class="chart-wrap">
-    <canvas id="chart"></canvas>
-    <button class="btn-reset" onclick="resetChart()">🔄 Reset Grafik</button>
+    <h3>Grafik Arus (A)</h3>
+    <canvas id="chartArus"></canvas>
+    <button class="btn-reset" onclick="resetArus()">🔄 Reset Grafik Arus</button>
+  </div>
+
+  <!-- Grafik Daya -->
+  <div class="chart-wrap">
+    <h3>Grafik Daya (W)</h3>
+    <canvas id="chartDaya"></canvas>
+    <button class="btn-reset" onclick="resetDaya()">🔄 Reset Grafik Daya</button>
   </div>
 
   <div class="footer">Auto refresh 5 detik • GitHub Pages</div>
@@ -69,42 +76,48 @@
     const elStatus = document.getElementById("status");
     const alarmBox = document.getElementById("alarmBox");
 
-    let labels   = JSON.parse(localStorage.getItem('labels') || '[]');
-    let arusData = JSON.parse(localStorage.getItem('arusData') || '[]');
-    let dayaData = JSON.parse(localStorage.getItem('dayaData') || '[]');
+    let labelsArus = JSON.parse(localStorage.getItem('labelsArus') || '[]');
+    let arusData  = JSON.parse(localStorage.getItem('arusData') || '[]');
+    let labelsDaya = JSON.parse(localStorage.getItem('labelsDaya') || '[]');
+    let dayaData  = JSON.parse(localStorage.getItem('dayaData') || '[]');
 
-    const ctx = document.getElementById('chart');
-    const chart = new Chart(ctx, {
+    const ctxArus = document.getElementById('chartArus');
+    const ctxDaya = document.getElementById('chartDaya');
+
+    const chartArus = new Chart(ctxArus, {
       type: 'line',
       data: {
-        labels,
-        datasets: [
-          { 
-            label: 'Arus (A)', 
-            data: arusData, 
-            tension: .3,
-            borderWidth: 3,
-            pointRadius: 3
-          },
-          { 
-            label: 'Daya (W)', 
-            data: dayaData, 
-            tension: .3,
-            borderWidth: 1,
-            pointRadius: 2
-          }
-        ]
+        labels: labelsArus,
+        datasets: [{
+          label: 'Arus (A)',
+          data: arusData,
+          tension: .3,
+          borderWidth: 3,
+          pointRadius: 3
+        }]
       },
-      options: { 
-        responsive: true, 
-        scales: { y: { beginAtZero: true } } 
-      }
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+    });
+
+    const chartDaya = new Chart(ctxDaya, {
+      type: 'line',
+      data: {
+        labels: labelsDaya,
+        datasets: [{
+          label: 'Daya (W)',
+          data: dayaData,
+          tension: .3,
+          borderWidth: 2,
+          pointRadius: 2
+        }]
+      },
+      options: { responsive: true, scales: { y: { beginAtZero: true } } }
     });
 
     async function getPin(pin){
       const res = await fetch(`https://blynk.cloud/external/api/get?token=${TOKEN}&${pin}`);
       const txt = await res.text();
-      return parseFloat(txt) || 0;
+      return Number(txt.replace(',', '.')) || 0;
     }
 
     async function getStatus(){
@@ -133,37 +146,45 @@
         alarmBox.style.display = (arus > 3 || daya > 660) ? "block" : "none";
 
         const now = new Date().toLocaleTimeString();
-        labels.push(now);
+
+        labelsArus.push(now);
         arusData.push(arus);
+        if (labelsArus.length > maxPoints) { labelsArus.shift(); arusData.shift(); }
+
+        labelsDaya.push(now);
         dayaData.push(daya);
+        if (labelsDaya.length > maxPoints) { labelsDaya.shift(); dayaData.shift(); }
 
-        if (labels.length > maxPoints) {
-          labels.shift(); arusData.shift(); dayaData.shift();
-        }
-
-        localStorage.setItem('labels', JSON.stringify(labels));
+        localStorage.setItem('labelsArus', JSON.stringify(labelsArus));
         localStorage.setItem('arusData', JSON.stringify(arusData));
+        localStorage.setItem('labelsDaya', JSON.stringify(labelsDaya));
         localStorage.setItem('dayaData', JSON.stringify(dayaData));
 
-        chart.update();
+        chartArus.update();
+        chartDaya.update();
       } catch (e) {
         console.error("Gagal update:", e);
       }
     }
 
-    function resetChart(){
-      labels = [];
+    function resetArus(){
+      labelsArus = [];
       arusData = [];
-      dayaData = [];
-
-      localStorage.removeItem('labels');
+      localStorage.removeItem('labelsArus');
       localStorage.removeItem('arusData');
-      localStorage.removeItem('dayaData');
+      chartArus.data.labels = labelsArus;
+      chartArus.data.datasets[0].data = arusData;
+      chartArus.update();
+    }
 
-      chart.data.labels = labels;
-      chart.data.datasets[0].data = arusData;
-      chart.data.datasets[1].data = dayaData;
-      chart.update();
+    function resetDaya(){
+      labelsDaya = [];
+      dayaData = [];
+      localStorage.removeItem('labelsDaya');
+      localStorage.removeItem('dayaData');
+      chartDaya.data.labels = labelsDaya;
+      chartDaya.data.datasets[0].data = dayaData;
+      chartDaya.update();
     }
 
     updateData();
