@@ -21,6 +21,7 @@
     .chart-wrap{width:min(900px,92%);background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.2);border-radius:16px;padding:14px;margin:12px 0 22px}
     .footer{opacity:.6;font-size:12px;margin-bottom:18px}
     .logout{position:fixed;top:12px;right:12px;color:#fff;text-decoration:none;opacity:.85;z-index:9999}
+    .btn-reset{margin-top:10px;padding:8px 14px;border:none;border-radius:10px;background:#ff512f;color:#fff;font-weight:700;cursor:pointer}
   </style>
 </head>
 <body>
@@ -53,6 +54,7 @@
 
   <div class="chart-wrap">
     <canvas id="chart"></canvas>
+    <button class="btn-reset" onclick="resetChart()">🔄 Reset Grafik</button>
   </div>
 
   <div class="footer">Auto refresh 5 detik • GitHub Pages</div>
@@ -77,11 +79,26 @@
       data: {
         labels,
         datasets: [
-          { label: 'Arus (A)', data: arusData, tension:.3 },
-          { label: 'Daya (W)', data: dayaData, tension:.3 }
+          { 
+            label: 'Arus (A)', 
+            data: arusData, 
+            tension: .3,
+            borderWidth: 3,
+            pointRadius: 3
+          },
+          { 
+            label: 'Daya (W)', 
+            data: dayaData, 
+            tension: .3,
+            borderWidth: 1,
+            pointRadius: 2
+          }
         ]
       },
-      options: { responsive: true, scales: { y: { beginAtZero: true } } }
+      options: { 
+        responsive: true, 
+        scales: { y: { beginAtZero: true } } 
+      }
     });
 
     async function getPin(pin){
@@ -105,9 +122,9 @@
           getStatus()
         ]);
 
-        elArus.textContent = arus.toFixed(2);
-        elDaya.textContent = Math.round(daya);
-        elTeg.textContent  = Math.round(tegangan);
+        elArus.textContent = Number(arus).toFixed(2);
+        elDaya.textContent = Number(daya).toFixed(0);
+        elTeg.textContent  = Number(tegangan).toFixed(0);
 
         elStatus.innerHTML = online
           ? '<span style="color:#7CFF7A">🟢 ONLINE</span>'
@@ -132,6 +149,21 @@
       } catch (e) {
         console.error("Gagal update:", e);
       }
+    }
+
+    function resetChart(){
+      labels = [];
+      arusData = [];
+      dayaData = [];
+
+      localStorage.removeItem('labels');
+      localStorage.removeItem('arusData');
+      localStorage.removeItem('dayaData');
+
+      chart.data.labels = labels;
+      chart.data.datasets[0].data = arusData;
+      chart.data.datasets[1].data = dayaData;
+      chart.update();
     }
 
     updateData();
